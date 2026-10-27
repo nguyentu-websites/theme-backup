@@ -1,8 +1,5 @@
 name: Snapshot source theme repository (one time)
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/backup-theme-once.yml]
   workflow_dispatch:
 
 permissions:
@@ -10,17 +7,19 @@ permissions:
 
 jobs:
   backup:
-    if: github.repository == 'nguyentu-websites/theme-backup'
+    if: github.repository == 'nguyentu-websites/theme-backup' && github.event.repository.private == true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Copy every source branch and tag into dated backup refs
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_READ_TOKEN: ${{ secrets.THEME_SOURCE_READ_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE="https://x-access-token:${GH_TOKEN}@github.com/thuexemayhanoi/theme.git"
+          test -n "${SOURCE_READ_TOKEN}" || { echo "::error::Set THEME_SOURCE_READ_TOKEN with read-only access to thuexemayhanoi/theme"; exit 1; }
+          SOURCE="https://x-access-token:${SOURCE_READ_TOKEN}@github.com/thuexemayhanoi/theme.git"
           DEST="https://x-access-token:${GH_TOKEN}@github.com/nguyentu-websites/theme-backup.git"
           PREFIX="snapshots/2026-10-28"
           git clone --mirror "${SOURCE}" source.git
